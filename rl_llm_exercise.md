@@ -1,4 +1,6 @@
 [exercise link](https://docs.google.com/document/d/1O2WWl66ZzembmgXuRlgFT68pc7VI67ynI91Z4dA8CnI/edit?tab=t.0)
+[repo](https://github.com/preferencemodel/hello-py)
+[swe_bench_pro](https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro)
 
 You have 1 week to complete but feel free to submit earlier. Please time how long it took you for each task. If we decide to work with you we will compensate you for your time on these tasks. To submit, Fill out the Google Form at https://forms.gle/LCLLTV3CznPwAVWF9.
 Objective
