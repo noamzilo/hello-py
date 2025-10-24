@@ -1,0 +1,5 @@
+- We are using uv as a venv. The entrypoint is `uv run main.py`
+- You must consult with the user before running anything.
+- Don't write documentation at all. Only tools and agents should have docstrings.
+- Only use top of file imports
+- Don't use catch-all directives.
