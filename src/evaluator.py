@@ -4,6 +4,7 @@ from typing import Any
 from anthropic.types import ToolUnionParam
 
 from .agent import run_agent_loop
+from .config import DEBUG, TEST_MAX_STEPS
 
 
 async def run_single_test(
@@ -17,16 +18,26 @@ async def run_single_test(
 ) -> tuple[int, bool, Any]:
 	if verbose:
 		print(f"\n\n{'=' * 20} RUN {run_id}/{num_runs} {'=' * 20}")
+	
+	if DEBUG:
+		print(f"[DEBUG] Starting test run {run_id}/{num_runs}")
+		print(f"[DEBUG] Expected answer: {expected_answer}")
+		print(f"[DEBUG] Prompt: {prompt[:100]}...")
 
 	result = await run_agent_loop(
 		prompt=prompt,
 		tools=tools,
 		tool_handlers=tool_handlers,
-		max_steps=5,
+		max_steps=TEST_MAX_STEPS,
 		verbose=verbose,
 	)
 
 	success = result == expected_answer
+	
+	if DEBUG:
+		print(f"[DEBUG] Test run {run_id} completed")
+		print(f"[DEBUG] Result: {result}")
+		print(f"[DEBUG] Success: {success}")
 
 	if success:
 		print(f"✓ Run {run_id}: SUCCESS - Got {result}")
