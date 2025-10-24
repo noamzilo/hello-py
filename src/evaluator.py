@@ -3,7 +3,7 @@ from typing import Any
 
 from anthropic.types import ToolUnionParam
 
-from agent import run_agent_loop
+from .agent import run_agent_loop
 
 
 async def run_single_test(

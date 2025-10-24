@@ -2,8 +2,8 @@ import asyncio
 
 from anthropic.types import ToolUnionParam
 
-from evaluator import run_single_test
-from tools import python_expression_tool, submit_answer_tool
+from .evaluator import run_single_test
+from .tools import python_expression_tool, submit_answer_tool
 
 
 async def run_test_suite(concurrent: bool = True):

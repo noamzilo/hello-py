@@ -1,6 +1,6 @@
 import asyncio
 from dotenv import load_dotenv
-from test_runner import run_test_suite
+from src.test_runner import run_test_suite
 load_dotenv()
 
 
