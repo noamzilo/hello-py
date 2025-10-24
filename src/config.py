@@ -10,10 +10,22 @@ DEFAULT_VERBOSE = True
 
 # Test suite configuration
 NUM_RUNS = 1
-EXPECTED_ANSWER = 8769
-TEST_PROMPT = "Calculate (2^10 + 3^5) * 7 - 100. Use the python_expression tool and then submit the answer."
-TEST_MAX_STEPS = 5
+TEST_PROMPT = """You have access to a pandas DataFrame named 'df' with numerical values containing extreme outliers.
+
+Your task:
+1. Inspect the dataframe to understand its structure
+2. Remove the outliers using a reasonable statistical method (e.g., IQR method, Z-score, or similar)
+3. Compute the mean of the cleaned data (mean of all values across all rows and columns)
+4. Submit the mean as your answer
+
+You have access to: pandas as 'pd', numpy as 'np', and the dataframe as 'df'.
+Use the python_expression tool to write Python code, and submit_answer to submit your final result."""
+
+TEST_MAX_STEPS = 10
 TEST_VERBOSE = False
 
 # Execution configuration
 DEFAULT_CONCURRENT = True
+
+from src.environment import CORRECT_MEAN
+EXPECTED_ANSWER = CORRECT_MEAN
