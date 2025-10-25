@@ -34,10 +34,16 @@ async def run_agent_loop(
 	messages: list[MessageParam] = [{"role": "user", "content": prompt}]
 
 	for step in range(max_steps):
+		steps_remaining = max_steps - step
+		
 		if verbose:
 			print(f"\n{'='*70}")
-			print(f"STEP {step + 1}/{max_steps}")
+			print(f"STEP {step + 1}/{max_steps} - {steps_remaining} steps remaining")
 			print(f"{'='*70}")
+		
+		# Add step count information to the conversation
+		step_info = f"\n\n[SYSTEM INFO] You are on step {step + 1} of {max_steps}. You have {steps_remaining} steps remaining. You can continue working or submit your answer using the submit_answer tool."
+		messages.append({"role": "user", "content": step_info})
 		
 		if DEBUG:
 			print(f"\n>>> Calling model: {model}")

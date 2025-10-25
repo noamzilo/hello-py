@@ -33,7 +33,10 @@ async def run_single_test(
 		verbose=verbose,
 	)
 
-	if tolerance > 0 and isinstance(result, (int, float)) and isinstance(expected_answer, (int, float)):
+	if result is None:
+		# Handle case where agent didn't submit an answer
+		success = False
+	elif tolerance > 0 and isinstance(result, (int, float)) and isinstance(expected_answer, (int, float)):
 		# Use absolute tolerance
 		absolute_error = abs(result - expected_answer)
 		success = absolute_error <= tolerance
@@ -46,7 +49,10 @@ async def run_single_test(
 		print(f"[DEBUG] Expected: {expected_answer}")
 		if tolerance > 0:
 			print(f"[DEBUG] Tolerance: {tolerance}")
-			print(f"[DEBUG] Absolute error: {abs(result - expected_answer) if isinstance(result, (int, float)) else 'N/A'}")
+			if result is not None and isinstance(result, (int, float)):
+				print(f"[DEBUG] Absolute error: {abs(result - expected_answer)}")
+			else:
+				print(f"[DEBUG] Absolute error: N/A (result is None or not numeric)")
 		print(f"[DEBUG] Success: {success}")
 
 	if success:
@@ -55,7 +61,9 @@ async def run_single_test(
 		else:
 			print(f"✓ Run {run_id}: SUCCESS - Got {result}")
 	else:
-		if tolerance > 0:
+		if result is None:
+			print(f"✗ Run {run_id}: FAILURE - No answer submitted (agent reached max steps or didn't use submit_answer tool)")
+		elif tolerance > 0:
 			absolute_error = abs(result - expected_answer)
 			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer} ± {tolerance:.6f} (actual error: {absolute_error:.6f})")
 		else:

@@ -4,6 +4,7 @@ from typing import Any, TypedDict
 import re
 import pandas as pd
 import numpy as np
+import scipy
 from .environment import df
 
 
@@ -65,7 +66,7 @@ def python_expression_tool(expression: str) -> PythonExpressionToolResult:
 	"""
 	Tool that evaluates Python expressions using exec.
 	Use print(...) to emit output; stdout will be captured and returned.
-	You have access to pandas as 'pd', numpy as 'np', and the dataframe as 'df'.
+	You have access to pandas as 'pd', numpy as 'np', scipy as scipy, and the dataframe as 'df'.
 	"""
 	try:
 		if '#' in expression:
@@ -77,6 +78,7 @@ def python_expression_tool(expression: str) -> PythonExpressionToolResult:
 		namespace = {
 			'pd': pd,
 			'np': np,
+            'scipy': scipy,
 			'df': df,
 		}
 		stdout = StringIO()

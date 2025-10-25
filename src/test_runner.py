@@ -4,7 +4,7 @@ from anthropic.types import ToolUnionParam
 
 from .evaluator import run_single_test
 from .tools import python_expression_tool, submit_answer_tool
-from .config import DEBUG, NUM_RUNS, EXPECTED_ANSWER, ANSWER_TOLERANCE, TEST_PROMPT, TEST_MAX_STEPS, TEST_VERBOSE
+from .config import DEBUG, NUM_RUNS, EXPECTED_ANSWER, ANSWER_TOLERANCE, create_prompt, TEST_MAX_STEPS, TEST_VERBOSE
 
 
 async def run_test_suite(concurrent: bool = True):
@@ -42,7 +42,7 @@ async def run_test_suite(concurrent: bool = True):
 	# Run the test and track success rate
 	num_runs = NUM_RUNS
 	expected_answer = EXPECTED_ANSWER
-	prompt = TEST_PROMPT
+	prompt = create_prompt(TEST_MAX_STEPS)
 
 	if DEBUG:
 		print(f"[DEBUG] Test suite configuration:")
