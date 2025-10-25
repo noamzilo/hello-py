@@ -18,6 +18,19 @@ class SubmitAnswerToolResult(TypedDict):
 	submitted: bool
 
 
+_persistent_namespace: dict[str, Any] = {}
+
+
+def reset_namespace() -> None:
+	global _persistent_namespace
+	_persistent_namespace = {
+		'pd': pd,
+		'np': np,
+		'scipy': scipy,
+		'df': df,
+	}
+
+
 def is_allowed_summary_output(output: str) -> bool:
 	output_lower = output.lower()
 	
@@ -67,7 +80,10 @@ def python_expression_tool(expression: str) -> PythonExpressionToolResult:
 	Tool that evaluates Python expressions using exec.
 	Use print(...) to emit output; stdout will be captured and returned.
 	You have access to pandas as 'pd', numpy as 'np', scipy as scipy, and the dataframe as 'df'.
+	Variables defined in previous steps persist across steps.
 	"""
+	global _persistent_namespace
+	
 	try:
 		if '#' in expression:
 			return {
@@ -75,15 +91,12 @@ def python_expression_tool(expression: str) -> PythonExpressionToolResult:
 				"error": "Comments are not allowed in Python code. Remove all # comments from your code."
 			}
 		
-		namespace = {
-			'pd': pd,
-			'np': np,
-            'scipy': scipy,
-			'df': df,
-		}
+		if not _persistent_namespace:
+			reset_namespace()
+		
 		stdout = StringIO()
 		with redirect_stdout(stdout):
-			exec(expression, namespace, namespace)
+			exec(expression, _persistent_namespace, _persistent_namespace)
 		
 		output = stdout.getvalue()
 		num_cols = len(df.columns)

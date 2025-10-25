@@ -6,6 +6,7 @@ from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam, ToolUnionParam
 
 from .config import DEBUG, MAX_TOKENS, DEFAULT_MAX_STEPS, DEFAULT_MODEL, DEFAULT_VERBOSE
+from .tools import reset_namespace
 
 
 async def run_agent_loop(
@@ -30,6 +31,8 @@ async def run_agent_loop(
 	Returns:
 		The submitted answer if submit_answer was called, otherwise None
 	"""
+	reset_namespace()
+	
 	client = AsyncAnthropic()
 	messages: list[MessageParam] = [{"role": "user", "content": prompt}]
 

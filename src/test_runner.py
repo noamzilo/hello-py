@@ -7,7 +7,9 @@ from .tools import python_expression_tool, submit_answer_tool
 from .config import DEBUG, NUM_RUNS, EXPECTED_ANSWER, ANSWER_TOLERANCE, create_prompt, TEST_MAX_STEPS, TEST_VERBOSE
 
 
-async def run_test_suite(concurrent: bool = True):
+async def run_test_suite(concurrent: bool = False):
+	assert not concurrent # 1. This caused rate limiting issues. 2. We persist state and this would interfere.
+	# Opting not to solve the concurrency issues and instead disallow it.
 	tools: list[ToolUnionParam] = [
 		{
 			"name": "python_expression",

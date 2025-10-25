@@ -75,8 +75,9 @@ Notes:
  - You may not use any command that outputs more than 2*len(columns) values from the df to console.
  - Do not use comments in your Python code.
  - Each step will show you how many steps you have remaining.
+ - Variables you define in one step will persist and be available in subsequent steps.
 
-You have access to: pandas as 'pd', numpy as 'np', scipy as 'scipy', and the dataframe as 'df'.
+You also have initial access to: pandas as 'pd', numpy as 'np', scipy as 'scipy', and the raw dataframe as 'df'.  
 Use the python_expression tool to write Python code, and submit_answer to submit your final result."""
 
 TEST_MAX_STEPS = 10
@@ -86,7 +87,7 @@ TEST_PROMPT = create_prompt(TEST_MAX_STEPS)
 TEST_VERBOSE = False
 
 # Execution configuration
-DEFAULT_CONCURRENT = False
+CONCURRENT = False
 
 EXPECTED_ANSWER = CORRECT_MEAN
 ANSWER_TOLERANCE = TOLERANCE_ABSOLUTE
