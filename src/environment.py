@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
 from src.config import (
-    RANDOM_SEED, NUM_ROWS, NUM_COLS, NUM_CLEAN_ROWS,
+    RANDOM_SEED, NUM_ROWS, NUM_COLS, CLEAN_DATA_FRACTION,
     CLEAN_DATA_MEAN, CLEAN_DATA_STD,
     NOISE_UNIFORM_RANGE, NOISE_NORMAL_STD, NOISE_MULTIPLICATIVE_RANGE,
     NOISE_EXPONENTIAL_SCALE, NOISE_LAPLACE_SCALE,
     MODERATE_OUTLIER_FRACTION, MODERATE_OUTLIER_MIN_SIGMA, MODERATE_OUTLIER_MAX_SIGMA,
     OUTLIER_NEGATION_FREQUENCY,
-    NUM_DUPLICATE_ROWS, NUM_SIGN_FLIP_ROWS, SIGN_FLIP_MIN_COLS, SIGN_FLIP_MAX_COLS,
-    NUM_DECIMAL_SHIFT_ROWS, DECIMAL_SHIFT_MIN_COLS, DECIMAL_SHIFT_MAX_COLS, DECIMAL_SHIFT_MULTIPLIER,
-    NUM_MISSING_VALUE_ROWS, MISSING_VALUE_MIN_COLS, MISSING_VALUE_MAX_COLS,
-    NUM_ZERO_CORRUPTION_ROWS, ZERO_CORRUPTION_MIN_COLS, ZERO_CORRUPTION_MAX_COLS,
+    DUPLICATE_ROWS_FRACTION, SIGN_FLIP_ROWS_FRACTION, SIGN_FLIP_MIN_COLS, SIGN_FLIP_MAX_COLS,
+    DECIMAL_SHIFT_ROWS_FRACTION, DECIMAL_SHIFT_MIN_COLS, DECIMAL_SHIFT_MAX_COLS, DECIMAL_SHIFT_MULTIPLIER,
+    MISSING_VALUE_ROWS_FRACTION, MISSING_VALUE_MIN_COLS, MISSING_VALUE_MAX_COLS,
+    ZERO_CORRUPTION_ROWS_FRACTION, ZERO_CORRUPTION_MIN_COLS, ZERO_CORRUPTION_MAX_COLS,
+    IQR_BOUNDARY_ROWS_FRACTION, IQR_BOUNDARY_MIN_SIGMA, IQR_BOUNDARY_MAX_SIGMA,
     IQR_MULTIPLIER, ZSCORE_THRESHOLD, MODIFIED_ZSCORE_CONSTANT, MODIFIED_ZSCORE_THRESHOLD,
     PERCENTILE_LOWER, PERCENTILE_UPPER, TOLERANCE_MULTIPLIER
 )
@@ -19,60 +20,68 @@ from src.config import (
 class DataGenerator:
     def __init__(self):
         np.random.seed(RANDOM_SEED)
+        self.num_clean_rows = int(NUM_ROWS * CLEAN_DATA_FRACTION)
+        self.num_duplicate_rows = int(NUM_ROWS * DUPLICATE_ROWS_FRACTION)
+        self.num_sign_flip_rows = int(NUM_ROWS * SIGN_FLIP_ROWS_FRACTION)
+        self.num_decimal_shift_rows = int(NUM_ROWS * DECIMAL_SHIFT_ROWS_FRACTION)
+        self.num_missing_value_rows = int(NUM_ROWS * MISSING_VALUE_ROWS_FRACTION)
+        self.num_zero_corruption_rows = int(NUM_ROWS * ZERO_CORRUPTION_ROWS_FRACTION)
+        self.num_iqr_boundary_rows = int(NUM_ROWS * IQR_BOUNDARY_ROWS_FRACTION)
+        self.num_moderate_outliers = int(NUM_ROWS * MODERATE_OUTLIER_FRACTION)
+        
         self.clean_data = self._generate_clean_data()
         self.correct_mean = self.clean_data.mean()
     
     def _generate_clean_data(self):
-        return np.random.normal(loc=CLEAN_DATA_MEAN, scale=CLEAN_DATA_STD, size=(NUM_CLEAN_ROWS, NUM_COLS))
+        return np.random.normal(loc=CLEAN_DATA_MEAN, scale=CLEAN_DATA_STD, size=(self.num_clean_rows, NUM_COLS))
     
     def _add_noise(self, data):
         data_with_noise = data.copy()
         
         for col_idx in range(NUM_COLS):
             if col_idx == 0:
-                noise = np.random.uniform(-NOISE_UNIFORM_RANGE, NOISE_UNIFORM_RANGE, size=NUM_CLEAN_ROWS)
+                noise = np.random.uniform(-NOISE_UNIFORM_RANGE, NOISE_UNIFORM_RANGE, size=self.num_clean_rows)
             elif col_idx == 1:
-                noise = np.random.normal(0, NOISE_NORMAL_STD, size=NUM_CLEAN_ROWS)
+                noise = np.random.normal(0, NOISE_NORMAL_STD, size=self.num_clean_rows)
             elif col_idx == 2:
-                noise = data_with_noise[:, col_idx] * np.random.uniform(-NOISE_MULTIPLICATIVE_RANGE, NOISE_MULTIPLICATIVE_RANGE, size=NUM_CLEAN_ROWS)
+                noise = data_with_noise[:, col_idx] * np.random.uniform(-NOISE_MULTIPLICATIVE_RANGE, NOISE_MULTIPLICATIVE_RANGE, size=self.num_clean_rows)
             elif col_idx == 3:
-                noise = np.random.exponential(NOISE_EXPONENTIAL_SCALE, size=NUM_CLEAN_ROWS) - NOISE_EXPONENTIAL_SCALE
+                noise = np.random.exponential(NOISE_EXPONENTIAL_SCALE, size=self.num_clean_rows) - NOISE_EXPONENTIAL_SCALE
             elif col_idx == 4:
-                noise = np.random.laplace(0, NOISE_LAPLACE_SCALE, size=NUM_CLEAN_ROWS)
+                noise = np.random.laplace(0, NOISE_LAPLACE_SCALE, size=self.num_clean_rows)
             
             data_with_noise[:, col_idx] += noise
         
         return data_with_noise
     
     def _generate_moderate_outliers(self):
-        num_moderate_outliers = int(NUM_ROWS * MODERATE_OUTLIER_FRACTION)
         outlier_min = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MIN_SIGMA * CLEAN_DATA_STD
         outlier_max = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MAX_SIGMA * CLEAN_DATA_STD
-        moderate_outliers = np.random.uniform(outlier_min, outlier_max, size=(num_moderate_outliers, NUM_COLS))
+        moderate_outliers = np.random.uniform(outlier_min, outlier_max, size=(self.num_moderate_outliers, NUM_COLS))
         
-        for i in range(num_moderate_outliers):
+        for i in range(self.num_moderate_outliers):
             if i % OUTLIER_NEGATION_FREQUENCY == 0:
                 moderate_outliers[i] *= -1
         
         return moderate_outliers
     
     def _generate_duplicate_rows(self, data):
-        duplicate_indices = np.random.choice(NUM_CLEAN_ROWS, size=NUM_DUPLICATE_ROWS, replace=True)
+        duplicate_indices = np.random.choice(self.num_clean_rows, size=self.num_duplicate_rows, replace=True)
         return data[duplicate_indices]
     
     def _generate_sign_flip_rows(self, data):
-        sign_flip_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_SIGN_FLIP_ROWS, replace=False)].copy()
+        sign_flip_rows = data[np.random.choice(self.num_clean_rows, size=self.num_sign_flip_rows, replace=False)].copy()
         
-        for i in range(NUM_SIGN_FLIP_ROWS):
+        for i in range(self.num_sign_flip_rows):
             flip_cols = np.random.choice(NUM_COLS, size=np.random.randint(SIGN_FLIP_MIN_COLS, SIGN_FLIP_MAX_COLS), replace=False)
             sign_flip_rows[i, flip_cols] *= -1
         
         return sign_flip_rows
     
     def _generate_decimal_shift_rows(self, data):
-        decimal_shift_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_DECIMAL_SHIFT_ROWS, replace=False)].copy()
+        decimal_shift_rows = data[np.random.choice(self.num_clean_rows, size=self.num_decimal_shift_rows, replace=False)].copy()
         
-        for i in range(NUM_DECIMAL_SHIFT_ROWS):
+        for i in range(self.num_decimal_shift_rows):
             shift_cols = np.random.choice(NUM_COLS, size=np.random.randint(DECIMAL_SHIFT_MIN_COLS, DECIMAL_SHIFT_MAX_COLS), replace=False)
             for col in shift_cols:
                 if np.random.rand() > 0.5:
@@ -83,22 +92,33 @@ class DataGenerator:
         return decimal_shift_rows
     
     def _generate_missing_value_rows(self, data):
-        missing_value_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_MISSING_VALUE_ROWS, replace=False)].copy()
+        missing_value_rows = data[np.random.choice(self.num_clean_rows, size=self.num_missing_value_rows, replace=False)].copy()
         
-        for i in range(NUM_MISSING_VALUE_ROWS):
+        for i in range(self.num_missing_value_rows):
             nan_cols = np.random.choice(NUM_COLS, size=np.random.randint(MISSING_VALUE_MIN_COLS, MISSING_VALUE_MAX_COLS), replace=False)
             missing_value_rows[i, nan_cols] = np.nan
         
         return missing_value_rows
     
     def _generate_zero_corruption_rows(self, data):
-        zero_corruption_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_ZERO_CORRUPTION_ROWS, replace=False)].copy()
+        zero_corruption_rows = data[np.random.choice(self.num_clean_rows, size=self.num_zero_corruption_rows, replace=False)].copy()
         
-        for i in range(NUM_ZERO_CORRUPTION_ROWS):
+        for i in range(self.num_zero_corruption_rows):
             zero_cols = np.random.choice(NUM_COLS, size=np.random.randint(ZERO_CORRUPTION_MIN_COLS, ZERO_CORRUPTION_MAX_COLS), replace=False)
             zero_corruption_rows[i, zero_cols] = 0
         
         return zero_corruption_rows
+    
+    def _generate_iqr_boundary_outliers(self):
+        outlier_min = CLEAN_DATA_MEAN + IQR_BOUNDARY_MIN_SIGMA * CLEAN_DATA_STD
+        outlier_max = CLEAN_DATA_MEAN + IQR_BOUNDARY_MAX_SIGMA * CLEAN_DATA_STD
+        iqr_boundary_outliers = np.random.uniform(outlier_min, outlier_max, size=(self.num_iqr_boundary_rows, NUM_COLS))
+        
+        for i in range(self.num_iqr_boundary_rows):
+            if i % 2 == 0:
+                iqr_boundary_outliers[i] *= -1
+        
+        return iqr_boundary_outliers
     
     def generate_corrupted_dataset(self):
         data_with_noise = self._add_noise(self.clean_data)
@@ -111,6 +131,7 @@ class DataGenerator:
             self._generate_decimal_shift_rows(data_with_noise),
             self._generate_missing_value_rows(data_with_noise),
             self._generate_zero_corruption_rows(data_with_noise),
+            self._generate_iqr_boundary_outliers(),
         ])
         
         np.random.shuffle(all_data)
