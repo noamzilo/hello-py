@@ -20,6 +20,7 @@ Your task:
 Notes:
  - The data may contain various types of corruption. You'll need to identify and handle them appropriately.
  - You may not use any command that outputs more than 2*len(columns) values from the df to console.
+ - Do not use comments in your Python code.
 
 You have access to: pandas as 'pd', numpy as 'np', and the dataframe as 'df'.
 Use the python_expression tool to write Python code, and submit_answer to submit your final result."""

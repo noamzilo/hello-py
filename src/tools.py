@@ -68,6 +68,12 @@ def python_expression_tool(expression: str) -> PythonExpressionToolResult:
 	You have access to pandas as 'pd', numpy as 'np', and the dataframe as 'df'.
 	"""
 	try:
+		if '#' in expression:
+			return {
+				"result": None,
+				"error": "Comments are not allowed in Python code. Remove all # comments from your code."
+			}
+		
 		namespace = {
 			'pd': pd,
 			'np': np,
