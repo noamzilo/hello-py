@@ -15,128 +15,200 @@ from src.config import (
     PERCENTILE_LOWER, PERCENTILE_UPPER, TOLERANCE_MULTIPLIER
 )
 
-np.random.seed(RANDOM_SEED)
 
-clean_data = np.random.normal(loc=CLEAN_DATA_MEAN, scale=CLEAN_DATA_STD, size=(NUM_CLEAN_ROWS, NUM_COLS))
-
-CORRECT_MEAN = clean_data.mean()
-
-data_with_noise = clean_data.copy()
-
-for col_idx in range(NUM_COLS):
-    if col_idx == 0:
-        noise = np.random.uniform(-NOISE_UNIFORM_RANGE, NOISE_UNIFORM_RANGE, size=NUM_CLEAN_ROWS)
-    elif col_idx == 1:
-        noise = np.random.normal(0, NOISE_NORMAL_STD, size=NUM_CLEAN_ROWS)
-    elif col_idx == 2:
-        noise = data_with_noise[:, col_idx] * np.random.uniform(-NOISE_MULTIPLICATIVE_RANGE, NOISE_MULTIPLICATIVE_RANGE, size=NUM_CLEAN_ROWS)
-    elif col_idx == 3:
-        noise = np.random.exponential(NOISE_EXPONENTIAL_SCALE, size=NUM_CLEAN_ROWS) - NOISE_EXPONENTIAL_SCALE
-    elif col_idx == 4:
-        noise = np.random.laplace(0, NOISE_LAPLACE_SCALE, size=NUM_CLEAN_ROWS)
+class DataGenerator:
+    def __init__(self):
+        np.random.seed(RANDOM_SEED)
+        self.clean_data = self._generate_clean_data()
+        self.correct_mean = self.clean_data.mean()
     
-    data_with_noise[:, col_idx] += noise
-
-num_moderate_outliers = int(NUM_ROWS * MODERATE_OUTLIER_FRACTION)
-outlier_min = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MIN_SIGMA * CLEAN_DATA_STD
-outlier_max = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MAX_SIGMA * CLEAN_DATA_STD
-moderate_outliers = np.random.uniform(outlier_min, outlier_max, size=(num_moderate_outliers, NUM_COLS))
-for i in range(num_moderate_outliers):
-    if i % OUTLIER_NEGATION_FREQUENCY == 0:
-        moderate_outliers[i] *= -1
-
-duplicate_indices = np.random.choice(NUM_CLEAN_ROWS, size=NUM_DUPLICATE_ROWS, replace=True)
-duplicate_rows = data_with_noise[duplicate_indices]
-
-sign_flip_rows = data_with_noise[np.random.choice(NUM_CLEAN_ROWS, size=NUM_SIGN_FLIP_ROWS, replace=False)].copy()
-for i in range(NUM_SIGN_FLIP_ROWS):
-    flip_cols = np.random.choice(NUM_COLS, size=np.random.randint(SIGN_FLIP_MIN_COLS, SIGN_FLIP_MAX_COLS), replace=False)
-    sign_flip_rows[i, flip_cols] *= -1
-
-decimal_shift_rows = data_with_noise[np.random.choice(NUM_CLEAN_ROWS, size=NUM_DECIMAL_SHIFT_ROWS, replace=False)].copy()
-for i in range(NUM_DECIMAL_SHIFT_ROWS):
-    shift_cols = np.random.choice(NUM_COLS, size=np.random.randint(DECIMAL_SHIFT_MIN_COLS, DECIMAL_SHIFT_MAX_COLS), replace=False)
-    for col in shift_cols:
-        if np.random.rand() > 0.5:
-            decimal_shift_rows[i, col] *= DECIMAL_SHIFT_MULTIPLIER
-        else:
-            decimal_shift_rows[i, col] /= DECIMAL_SHIFT_MULTIPLIER
-
-missing_value_rows = data_with_noise[np.random.choice(NUM_CLEAN_ROWS, size=NUM_MISSING_VALUE_ROWS, replace=False)].copy()
-for i in range(NUM_MISSING_VALUE_ROWS):
-    nan_cols = np.random.choice(NUM_COLS, size=np.random.randint(MISSING_VALUE_MIN_COLS, MISSING_VALUE_MAX_COLS), replace=False)
-    missing_value_rows[i, nan_cols] = np.nan
-
-zero_corruption_rows = data_with_noise[np.random.choice(NUM_CLEAN_ROWS, size=NUM_ZERO_CORRUPTION_ROWS, replace=False)].copy()
-for i in range(NUM_ZERO_CORRUPTION_ROWS):
-    zero_cols = np.random.choice(NUM_COLS, size=np.random.randint(ZERO_CORRUPTION_MIN_COLS, ZERO_CORRUPTION_MAX_COLS), replace=False)
-    zero_corruption_rows[i, zero_cols] = 0
-
-all_data = np.vstack([
-    data_with_noise,
-    moderate_outliers,
-    duplicate_rows,
-    sign_flip_rows,
-    decimal_shift_rows,
-    missing_value_rows,
-    zero_corruption_rows,
-])
-
-np.random.shuffle(all_data)
-
-df = pd.DataFrame(all_data, columns=[f'feature_{i}' for i in range(NUM_COLS)])
-
-def calculate_mean_iqr_method():
-    Q1 = df.quantile(0.25)
-    Q3 = df.quantile(0.75)
-    IQR = Q3 - Q1
+    def _generate_clean_data(self):
+        return np.random.normal(loc=CLEAN_DATA_MEAN, scale=CLEAN_DATA_STD, size=(NUM_CLEAN_ROWS, NUM_COLS))
     
-    lower_bound = Q1 - IQR_MULTIPLIER * IQR
-    upper_bound = Q3 + IQR_MULTIPLIER * IQR
+    def _add_noise(self, data):
+        data_with_noise = data.copy()
+        
+        for col_idx in range(NUM_COLS):
+            if col_idx == 0:
+                noise = np.random.uniform(-NOISE_UNIFORM_RANGE, NOISE_UNIFORM_RANGE, size=NUM_CLEAN_ROWS)
+            elif col_idx == 1:
+                noise = np.random.normal(0, NOISE_NORMAL_STD, size=NUM_CLEAN_ROWS)
+            elif col_idx == 2:
+                noise = data_with_noise[:, col_idx] * np.random.uniform(-NOISE_MULTIPLICATIVE_RANGE, NOISE_MULTIPLICATIVE_RANGE, size=NUM_CLEAN_ROWS)
+            elif col_idx == 3:
+                noise = np.random.exponential(NOISE_EXPONENTIAL_SCALE, size=NUM_CLEAN_ROWS) - NOISE_EXPONENTIAL_SCALE
+            elif col_idx == 4:
+                noise = np.random.laplace(0, NOISE_LAPLACE_SCALE, size=NUM_CLEAN_ROWS)
+            
+            data_with_noise[:, col_idx] += noise
+        
+        return data_with_noise
     
-    mask = ~((df < lower_bound) | (df > upper_bound)).any(axis=1)
-    df_cleaned = df[mask]
+    def _generate_moderate_outliers(self):
+        num_moderate_outliers = int(NUM_ROWS * MODERATE_OUTLIER_FRACTION)
+        outlier_min = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MIN_SIGMA * CLEAN_DATA_STD
+        outlier_max = CLEAN_DATA_MEAN + MODERATE_OUTLIER_MAX_SIGMA * CLEAN_DATA_STD
+        moderate_outliers = np.random.uniform(outlier_min, outlier_max, size=(num_moderate_outliers, NUM_COLS))
+        
+        for i in range(num_moderate_outliers):
+            if i % OUTLIER_NEGATION_FREQUENCY == 0:
+                moderate_outliers[i] *= -1
+        
+        return moderate_outliers
     
-    return df_cleaned.values.mean()
-
-def calculate_mean_zscore_method():
-    z_scores = np.abs((df - df.mean()) / df.std())
-    mask = (z_scores < ZSCORE_THRESHOLD).all(axis=1)
-    df_cleaned = df[mask]
+    def _generate_duplicate_rows(self, data):
+        duplicate_indices = np.random.choice(NUM_CLEAN_ROWS, size=NUM_DUPLICATE_ROWS, replace=True)
+        return data[duplicate_indices]
     
-    return df_cleaned.values.mean()
-
-def calculate_mean_modified_zscore_method():
-    median = df.median()
-    mad = np.abs(df - median).median()
-    modified_z_scores = MODIFIED_ZSCORE_CONSTANT * (df - median) / mad
-    mask = (np.abs(modified_z_scores) < MODIFIED_ZSCORE_THRESHOLD).all(axis=1)
-    df_cleaned = df[mask]
+    def _generate_sign_flip_rows(self, data):
+        sign_flip_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_SIGN_FLIP_ROWS, replace=False)].copy()
+        
+        for i in range(NUM_SIGN_FLIP_ROWS):
+            flip_cols = np.random.choice(NUM_COLS, size=np.random.randint(SIGN_FLIP_MIN_COLS, SIGN_FLIP_MAX_COLS), replace=False)
+            sign_flip_rows[i, flip_cols] *= -1
+        
+        return sign_flip_rows
     
-    return df_cleaned.values.mean()
-
-def calculate_mean_percentile_method():
-    lower = df.quantile(PERCENTILE_LOWER)
-    upper = df.quantile(PERCENTILE_UPPER)
-    mask = ~((df < lower) | (df > upper)).any(axis=1)
-    df_cleaned = df[mask]
+    def _generate_decimal_shift_rows(self, data):
+        decimal_shift_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_DECIMAL_SHIFT_ROWS, replace=False)].copy()
+        
+        for i in range(NUM_DECIMAL_SHIFT_ROWS):
+            shift_cols = np.random.choice(NUM_COLS, size=np.random.randint(DECIMAL_SHIFT_MIN_COLS, DECIMAL_SHIFT_MAX_COLS), replace=False)
+            for col in shift_cols:
+                if np.random.rand() > 0.5:
+                    decimal_shift_rows[i, col] *= DECIMAL_SHIFT_MULTIPLIER
+                else:
+                    decimal_shift_rows[i, col] /= DECIMAL_SHIFT_MULTIPLIER
+        
+        return decimal_shift_rows
     
-    return df_cleaned.values.mean()
+    def _generate_missing_value_rows(self, data):
+        missing_value_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_MISSING_VALUE_ROWS, replace=False)].copy()
+        
+        for i in range(NUM_MISSING_VALUE_ROWS):
+            nan_cols = np.random.choice(NUM_COLS, size=np.random.randint(MISSING_VALUE_MIN_COLS, MISSING_VALUE_MAX_COLS), replace=False)
+            missing_value_rows[i, nan_cols] = np.nan
+        
+        return missing_value_rows
+    
+    def _generate_zero_corruption_rows(self, data):
+        zero_corruption_rows = data[np.random.choice(NUM_CLEAN_ROWS, size=NUM_ZERO_CORRUPTION_ROWS, replace=False)].copy()
+        
+        for i in range(NUM_ZERO_CORRUPTION_ROWS):
+            zero_cols = np.random.choice(NUM_COLS, size=np.random.randint(ZERO_CORRUPTION_MIN_COLS, ZERO_CORRUPTION_MAX_COLS), replace=False)
+            zero_corruption_rows[i, zero_cols] = 0
+        
+        return zero_corruption_rows
+    
+    def generate_corrupted_dataset(self):
+        data_with_noise = self._add_noise(self.clean_data)
+        
+        all_data = np.vstack([
+            data_with_noise,
+            self._generate_moderate_outliers(),
+            self._generate_duplicate_rows(data_with_noise),
+            self._generate_sign_flip_rows(data_with_noise),
+            self._generate_decimal_shift_rows(data_with_noise),
+            self._generate_missing_value_rows(data_with_noise),
+            self._generate_zero_corruption_rows(data_with_noise),
+        ])
+        
+        np.random.shuffle(all_data)
+        
+        return pd.DataFrame(all_data, columns=[f'feature_{i}' for i in range(NUM_COLS)])
 
-iqr_result = calculate_mean_iqr_method()
-zscore_result = calculate_mean_zscore_method()
-modified_zscore_result = calculate_mean_modified_zscore_method()
-percentile_result = calculate_mean_percentile_method()
 
-methods_results = [iqr_result, zscore_result, modified_zscore_result, percentile_result]
+class DataProcessor:
+    def __init__(self, dataframe):
+        self.df_clean = dataframe.dropna()
+    
+    def calculate_mean_iqr_method(self):
+        Q1 = self.df_clean.quantile(0.25)
+        Q3 = self.df_clean.quantile(0.75)
+        IQR = Q3 - Q1
+        
+        lower_bound = Q1 - IQR_MULTIPLIER * IQR
+        upper_bound = Q3 + IQR_MULTIPLIER * IQR
+        
+        mask = ~((self.df_clean < lower_bound) | (self.df_clean > upper_bound)).any(axis=1)
+        df_cleaned = self.df_clean[mask]
+        
+        return df_cleaned.values.mean()
+
+    def calculate_mean_zscore_method(self):
+        z_scores = np.abs((self.df_clean - self.df_clean.mean()) / self.df_clean.std())
+        mask = (z_scores < ZSCORE_THRESHOLD).all(axis=1)
+        df_cleaned = self.df_clean[mask]
+        
+        return df_cleaned.values.mean()
+
+    def calculate_mean_modified_zscore_method(self):
+        median = self.df_clean.median()
+        mad = np.abs(self.df_clean - median).median()
+        modified_z_scores = MODIFIED_ZSCORE_CONSTANT * (self.df_clean - median) / mad
+        mask = (np.abs(modified_z_scores) < MODIFIED_ZSCORE_THRESHOLD).all(axis=1)
+        df_cleaned = self.df_clean[mask]
+        
+        return df_cleaned.values.mean()
+
+    def calculate_mean_percentile_method(self):
+        lower = self.df_clean.quantile(PERCENTILE_LOWER)
+        upper = self.df_clean.quantile(PERCENTILE_UPPER)
+        mask = ~((self.df_clean < lower) | (self.df_clean > upper)).any(axis=1)
+        df_cleaned = self.df_clean[mask]
+        
+        return df_cleaned.values.mean()
 
 
-valid_results = [result for result in methods_results if not np.isnan(result)]
-if valid_results:
-    relative_errors = [abs(result - CORRECT_MEAN) / abs(CORRECT_MEAN) * 100 for result in valid_results]
-    TOLERANCE_PERCENT = sorted(relative_errors)[1] * TOLERANCE_MULTIPLIER
-else:
-    TOLERANCE_PERCENT = 0.5
+class Environment:
+    def __init__(self):
+        self.data_generator = DataGenerator()
+        self.df = self.data_generator.generate_corrupted_dataset()
+        self.processor = DataProcessor(self.df)
+        
+        self.iqr_result = self.processor.calculate_mean_iqr_method()
+        self.zscore_result = self.processor.calculate_mean_zscore_method()
+        self.modified_zscore_result = self.processor.calculate_mean_modified_zscore_method()
+        self.percentile_result = self.processor.calculate_mean_percentile_method()
+        
+        self.methods_results = [
+            self.iqr_result,
+            self.zscore_result,
+            self.modified_zscore_result,
+            self.percentile_result
+        ]
+        
+        self._calculate_tolerance()
+    
+    def _calculate_tolerance(self):
+        relative_errors = [
+            abs(result - self.data_generator.correct_mean) / abs(self.data_generator.correct_mean) * 100
+            for result in self.methods_results
+        ]
+        self.tolerance_percent = sorted(relative_errors)[1] * TOLERANCE_MULTIPLIER
+        self.tolerance_absolute = abs(self.data_generator.correct_mean) * self.tolerance_percent / 100
+    
+    @property
+    def CORRECT_MEAN(self):
+        return self.data_generator.correct_mean
+    
+    @property
+    def TOLERANCE_PERCENT(self):
+        return self.tolerance_percent
+    
+    @property
+    def TOLERANCE_ABSOLUTE(self):
+        return self.tolerance_absolute
 
-TOLERANCE_ABSOLUTE = abs(CORRECT_MEAN) * TOLERANCE_PERCENT / 100
 
+env = Environment()
+
+CORRECT_MEAN = env.CORRECT_MEAN
+TOLERANCE_PERCENT = env.TOLERANCE_PERCENT
+TOLERANCE_ABSOLUTE = env.TOLERANCE_ABSOLUTE
+df = env.df
+iqr_result = env.iqr_result
+zscore_result = env.zscore_result
+modified_zscore_result = env.modified_zscore_result
+percentile_result = env.percentile_result
+methods_results = env.methods_results
