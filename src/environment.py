@@ -3,15 +3,30 @@ import pandas as pd
 
 np.random.seed(42)
 
-num_rows = 100
+num_rows = 150
 num_cols = 5
 
-normal_data = np.random.normal(loc=50, scale=10, size=(num_rows - 10, num_cols))
+clean_data = np.random.normal(loc=50, scale=10, size=(50, num_cols))
 
-noise = np.random.uniform(-5, 5, size=(num_rows - 10, num_cols))
-data_with_noise = normal_data + noise
+CORRECT_MEAN = clean_data.mean()
 
-outliers = np.array([
+data_with_noise = clean_data.copy()
+
+for col_idx in range(num_cols):
+    if col_idx == 0:
+        noise = np.random.uniform(-8, 8, size=50)
+    elif col_idx == 1:
+        noise = np.random.normal(0, 5, size=50)
+    elif col_idx == 2:
+        noise = data_with_noise[:, col_idx] * np.random.uniform(-0.15, 0.15, size=50)
+    elif col_idx == 3:
+        noise = np.random.exponential(3, size=50) - 3
+    elif col_idx == 4:
+        noise = np.random.laplace(0, 4, size=50)
+    
+    data_with_noise[:, col_idx] += noise
+
+extreme_outliers = np.array([
     [500, 480, 520, 510, 490],
     [600, 580, 610, 590, 620],
     [-300, -280, -310, -290, -320],
@@ -24,9 +39,42 @@ outliers = np.array([
     [1000, 1020, 980, 1010, 990],
 ])
 
-CORRECT_MEAN = data_with_noise.mean()
+duplicate_indices = np.random.choice(50, size=15, replace=True)
+duplicate_rows = data_with_noise[duplicate_indices]
 
-all_data = np.vstack([data_with_noise, outliers])
+sign_flip_rows = data_with_noise[np.random.choice(50, size=10, replace=False)].copy()
+for i in range(10):
+    flip_cols = np.random.choice(num_cols, size=np.random.randint(1, 4), replace=False)
+    sign_flip_rows[i, flip_cols] *= -1
+
+decimal_shift_rows = data_with_noise[np.random.choice(50, size=8, replace=False)].copy()
+for i in range(8):
+    shift_cols = np.random.choice(num_cols, size=np.random.randint(1, 3), replace=False)
+    for col in shift_cols:
+        if np.random.rand() > 0.5:
+            decimal_shift_rows[i, col] *= 10
+        else:
+            decimal_shift_rows[i, col] *= 0.1
+
+missing_value_rows = data_with_noise[np.random.choice(50, size=12, replace=False)].copy()
+for i in range(12):
+    nan_cols = np.random.choice(num_cols, size=np.random.randint(1, 3), replace=False)
+    missing_value_rows[i, nan_cols] = np.nan
+
+zero_corruption_rows = data_with_noise[np.random.choice(50, size=5, replace=False)].copy()
+for i in range(5):
+    zero_cols = np.random.choice(num_cols, size=np.random.randint(1, 2), replace=False)
+    zero_corruption_rows[i, zero_cols] = 0
+
+all_data = np.vstack([
+    data_with_noise,
+    extreme_outliers,
+    duplicate_rows,
+    sign_flip_rows,
+    decimal_shift_rows,
+    missing_value_rows,
+    zero_corruption_rows,
+])
 
 np.random.shuffle(all_data)
 

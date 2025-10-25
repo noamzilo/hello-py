@@ -10,13 +10,16 @@ DEFAULT_VERBOSE = True
 
 # Test suite configuration
 NUM_RUNS = 1
-TEST_PROMPT = """You have access to a pandas DataFrame named 'df' with numerical values containing extreme outliers.
+TEST_PROMPT = """You have access to a pandas DataFrame named 'df' with numerical values that has been corrupted.
 
 Your task:
-1. Inspect the dataframe to understand its structure
-2. Remove the outliers using a reasonable statistical method (e.g., IQR method, Z-score, or similar)
-3. Compute the mean of the cleaned data (mean of all values across all rows and columns)
-4. Submit the mean as your answer
+1. Clean the data to recover the original mean as closely as possible. You are not told the corruption mode(s) upfront.
+2. Compute the mean of the cleaned data (mean of all values across all rows and columns)
+3. Submit the mean as your answer
+
+Notes:
+ - The data may contain various types of corruption. You'll need to identify and handle them appropriately.
+ - You may not use any command that outputs more than 2*len(columns) values from the df to console.
 
 You have access to: pandas as 'pd', numpy as 'np', and the dataframe as 'df'.
 Use the python_expression tool to write Python code, and submit_answer to submit your final result."""
