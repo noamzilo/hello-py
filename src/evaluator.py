@@ -14,6 +14,7 @@ async def run_single_test(
 	tools: list[ToolUnionParam],
 	tool_handlers: dict[str, Callable[..., Any]],
 	expected_answer: Any,
+	tolerance: float = 0.0,
 	verbose: bool = False,
 ) -> tuple[int, bool, Any]:
 	if verbose:
@@ -32,17 +33,30 @@ async def run_single_test(
 		verbose=verbose,
 	)
 
-	success = result == expected_answer
+	if tolerance > 0 and isinstance(result, (int, float)) and isinstance(expected_answer, (int, float)):
+		success = abs(result - expected_answer) <= tolerance
+	else:
+		success = result == expected_answer
 	
 	if DEBUG:
 		print(f"[DEBUG] Test run {run_id} completed")
 		print(f"[DEBUG] Result: {result}")
+		print(f"[DEBUG] Expected: {expected_answer}")
+		if tolerance > 0:
+			print(f"[DEBUG] Tolerance: {tolerance}")
+			print(f"[DEBUG] Difference: {abs(result - expected_answer) if isinstance(result, (int, float)) else 'N/A'}")
 		print(f"[DEBUG] Success: {success}")
 
 	if success:
-		print(f"✓ Run {run_id}: SUCCESS - Got {result}")
+		if tolerance > 0:
+			print(f"✓ Run {run_id}: SUCCESS - Got {result} (within tolerance of {expected_answer} ± {tolerance})")
+		else:
+			print(f"✓ Run {run_id}: SUCCESS - Got {result}")
 	else:
-		print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer}")
+		if tolerance > 0:
+			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer} ± {tolerance}")
+		else:
+			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer}")
 
 	return run_id, success, result
 

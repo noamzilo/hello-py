@@ -4,8 +4,8 @@ DEBUG = True
 # Agent configuration
 MAX_TOKENS = 1000
 DEFAULT_MAX_STEPS = 20
-# DEFAULT_MODEL = "claude-haiku-4-5" # expensive for submitting
-DEFAULT_MODEL = "claude-3-haiku-20240307" # cheap for testing
+DEFAULT_MODEL = "claude-haiku-4-5" # expensive for submitting
+# DEFAULT_MODEL = "claude-3-haiku-20240307" # cheap for testing
 DEFAULT_VERBOSE = True
 
 # Test suite configuration
@@ -27,5 +27,6 @@ TEST_VERBOSE = False
 # Execution configuration
 DEFAULT_CONCURRENT = True
 
-from src.environment import CORRECT_MEAN
+from src.environment import CORRECT_MEAN, TOLERANCE
 EXPECTED_ANSWER = CORRECT_MEAN
+ANSWER_TOLERANCE = TOLERANCE
