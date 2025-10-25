@@ -1,4 +1,4 @@
-from src.environment import CORRECT_MEAN, TOLERANCE_PERCENT
+from src.environment import CORRECT_MEAN, TOLERANCE_ABSOLUTE
 
 # Debug configuration
 DEBUG = True
@@ -11,7 +11,7 @@ DEFAULT_MODEL = "claude-haiku-4-5" # expensive for submitting
 DEFAULT_VERBOSE = True
 
 # Test suite configuration
-NUM_RUNS = 3
+NUM_RUNS = 5
 TEST_PROMPT = """You have access to a pandas DataFrame named 'df' with numerical values that has been corrupted.
 
 Your task:
@@ -31,7 +31,7 @@ TEST_MAX_STEPS = 10
 TEST_VERBOSE = False
 
 # Execution configuration
-DEFAULT_CONCURRENT = True
+DEFAULT_CONCURRENT = False
 
 EXPECTED_ANSWER = CORRECT_MEAN
-ANSWER_TOLERANCE = TOLERANCE_PERCENT
+ANSWER_TOLERANCE = TOLERANCE_ABSOLUTE

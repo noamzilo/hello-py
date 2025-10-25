@@ -34,9 +34,9 @@ async def run_single_test(
 	)
 
 	if tolerance > 0 and isinstance(result, (int, float)) and isinstance(expected_answer, (int, float)):
-		# Use relative error (percentage) for tolerance
-		relative_error = abs(result - expected_answer) / abs(expected_answer) * 100
-		success = relative_error <= tolerance
+		# Use absolute tolerance
+		absolute_error = abs(result - expected_answer)
+		success = absolute_error <= tolerance
 	else:
 		success = result == expected_answer
 	
@@ -46,17 +46,18 @@ async def run_single_test(
 		print(f"[DEBUG] Expected: {expected_answer}")
 		if tolerance > 0:
 			print(f"[DEBUG] Tolerance: {tolerance}")
-			print(f"[DEBUG] Difference: {abs(result - expected_answer) if isinstance(result, (int, float)) else 'N/A'}")
+			print(f"[DEBUG] Absolute error: {abs(result - expected_answer) if isinstance(result, (int, float)) else 'N/A'}")
 		print(f"[DEBUG] Success: {success}")
 
 	if success:
 		if tolerance > 0:
-			print(f"✓ Run {run_id}: SUCCESS - Got {result} (within tolerance of {expected_answer} ± {tolerance})")
+			print(f"✓ Run {run_id}: SUCCESS - Got {result} (within tolerance of {expected_answer} ± {tolerance:.6f})")
 		else:
 			print(f"✓ Run {run_id}: SUCCESS - Got {result}")
 	else:
 		if tolerance > 0:
-			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer} ± {tolerance}")
+			absolute_error = abs(result - expected_answer)
+			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer} ± {tolerance:.6f} (actual error: {absolute_error:.6f})")
 		else:
 			print(f"✗ Run {run_id}: FAILURE - Got {result}, expected {expected_answer}")
 
