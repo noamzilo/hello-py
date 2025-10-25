@@ -34,7 +34,9 @@ async def run_single_test(
 	)
 
 	if tolerance > 0 and isinstance(result, (int, float)) and isinstance(expected_answer, (int, float)):
-		success = abs(result - expected_answer) <= tolerance
+		# Use relative error (percentage) for tolerance
+		relative_error = abs(result - expected_answer) / abs(expected_answer) * 100
+		success = relative_error <= tolerance
 	else:
 		success = result == expected_answer
 	

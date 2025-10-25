@@ -124,5 +124,12 @@ percentile_result = calculate_mean_percentile_method()
 
 methods_results = [iqr_result, zscore_result, modified_zscore_result, percentile_result]
 
-TOLERANCE = max(abs(result - CORRECT_MEAN) for result in methods_results) * 1.2
+
+valid_results = [result for result in methods_results if not np.isnan(result)]
+if valid_results:
+    # relative_errors = [abs(result - CORRECT_MEAN) / abs(CORRECT_MEAN) * 100 for result in valid_results]
+    # TOLERANCE_PERCENT = max(relative_errors) * 1.05
+    TOLERANCE_PERCENT = CORRECT_MEAN * 0.02
+else:
+    TOLERANCE_PERCENT = 1.
 
