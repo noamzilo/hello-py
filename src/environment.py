@@ -110,13 +110,34 @@ class DataGenerator:
         return zero_corruption_rows
     
     def _generate_iqr_boundary_outliers(self):
-        outlier_min = CLEAN_DATA_MEAN + IQR_BOUNDARY_MIN_SIGMA * CLEAN_DATA_STD
-        outlier_max = CLEAN_DATA_MEAN + IQR_BOUNDARY_MAX_SIGMA * CLEAN_DATA_STD
-        iqr_boundary_outliers = np.random.uniform(outlier_min, outlier_max, size=(self.num_iqr_boundary_rows, NUM_COLS))
+        """
+        Generate balanced data around the true mean that IQR will reject but Z-score methods will keep.
         
-        for i in range(self.num_iqr_boundary_rows):
-            if i % 2 == 0:
-                iqr_boundary_outliers[i] *= -1
+        Strategy:
+        - Create data at 2.0-2.8 sigma from the mean (70-78 and 22-30 for mean=50, std=10)
+        - Split into upper and lower halves to maintain balance around true mean
+        - IQR method (conservative) will reject this data as outliers
+        - Z-score methods (threshold=3) will keep this data as it's within 3 sigma
+        - This makes IQR lose valuable balanced data, causing its mean estimate to drift
+        """
+        half = self.num_iqr_boundary_rows // 2
+        
+        # Upper half: values slightly above mean (e.g., 70-78 for mean=50)
+        upper_values = np.random.uniform(
+            CLEAN_DATA_MEAN + IQR_BOUNDARY_MIN_SIGMA * CLEAN_DATA_STD,
+            CLEAN_DATA_MEAN + IQR_BOUNDARY_MAX_SIGMA * CLEAN_DATA_STD,
+            size=(half, NUM_COLS)
+        )
+        
+        # Lower half: values slightly below mean (e.g., 22-30 for mean=50)
+        lower_values = np.random.uniform(
+            CLEAN_DATA_MEAN - IQR_BOUNDARY_MAX_SIGMA * CLEAN_DATA_STD,
+            CLEAN_DATA_MEAN - IQR_BOUNDARY_MIN_SIGMA * CLEAN_DATA_STD,
+            size=(self.num_iqr_boundary_rows - half, NUM_COLS)
+        )
+        
+        # Combine upper and lower values to maintain balance around true mean
+        iqr_boundary_outliers = np.vstack([upper_values, lower_values])
         
         return iqr_boundary_outliers
     
